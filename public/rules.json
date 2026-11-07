@@ -1,0 +1,453 @@
+{
+ "game": "Override",
+ "version": "2.1",
+ "source": "https://manuals.vex.com/v5/override/v2.1/game/",
+ "categories": [
+  {
+   "id": "SG",
+   "name": "Specific Game",
+   "rules": [
+    {
+     "code": "SG1",
+     "title": "Starting a Match"
+    },
+    {
+     "code": "SG2",
+     "title": "Horizontal expansion is limited"
+    },
+    {
+     "code": "SG3",
+     "title": "Vertical expansion is limited"
+    },
+    {
+     "code": "SG4",
+     "title": "Keep Scoring Objects in the Field"
+    },
+    {
+     "code": "SG5",
+     "title": "Each Robot gets one Pin as a Preload"
+    },
+    {
+     "code": "SG6",
+     "title": "Possession is limited to a maximum of one Pin and one Cup"
+    },
+    {
+     "code": "SG7",
+     "title": "Don't cross the Autonomous Line, and don't interfere with your opponents' actions"
+    },
+    {
+     "code": "SG8",
+     "title": "Engage with the Midfield and/or Autonomous Line during the Autonomous Period at your own risk"
+    },
+    {
+     "code": "SG9",
+     "title": "Alliance Goals are protected"
+    },
+    {
+     "code": "SG10",
+     "title": "Placed Scoring Objects may not be removed from neutral Goals via direct or indirect interactions"
+    },
+    {
+     "code": "SG11",
+     "title": "Drive Team Members may only introduce Match Loads to the Field through Loaders"
+    },
+    {
+     "code": "SG12",
+     "title": "Some rules change during the Endgame period"
+    },
+    {
+     "code": "SG13",
+     "title": "Load Zones are protected during the Driver Controlled Period of the Match"
+    }
+   ]
+  },
+  {
+   "id": "GG",
+   "name": "General Game",
+   "rules": [
+    {
+     "code": "GG1",
+     "title": "Only Drive Team Members, and only in the Alliance Station"
+    },
+    {
+     "code": "GG2",
+     "title": "A Team's Robot should attend every Match"
+    },
+    {
+     "code": "GG3",
+     "title": "Robots on the Field must be ready to play"
+    },
+    {
+     "code": "GG4",
+     "title": "Hands out of the Field"
+    },
+    {
+     "code": "GG5",
+     "title": "Match replays are allowed, but rare"
+    },
+    {
+     "code": "GG6",
+     "title": "Disqualifications"
+    },
+    {
+     "code": "GG7",
+     "title": "Time-outs"
+    },
+    {
+     "code": "GG8",
+     "title": "Keep your Robots together"
+    },
+    {
+     "code": "GG9",
+     "title": "Don't hook your Robot to the Field, and don't get Entangled"
+    },
+    {
+     "code": "GG10",
+     "title": "The red Alliance may choose to place last"
+    },
+    {
+     "code": "GG11",
+     "title": "Controllers must stay connected to the Field"
+    },
+    {
+     "code": "GG12",
+     "title": "Autonomous means \"no humans\""
+    },
+    {
+     "code": "GG13",
+     "title": "All rules still apply in the Autonomous Period"
+    },
+    {
+     "code": "GG14",
+     "title": "Don't destroy other Robots. But, be prepared to encounter defense"
+    },
+    {
+     "code": "GG15",
+     "title": "Offensive Robots get the \"benefit of the doubt\" when judgment calls are required"
+    },
+    {
+     "code": "GG16",
+     "title": "You can't force an opponent into a penalty"
+    },
+    {
+     "code": "GG17",
+     "title": "No Holding for more than a 3-count"
+    },
+    {
+     "code": "GG18",
+     "title": "Use Scoring Objects to play the game"
+    }
+   ]
+  },
+  {
+   "id": "S",
+   "name": "Safety",
+   "rules": [
+    {
+     "code": "S1",
+     "title": "Be safe out there"
+    },
+    {
+     "code": "S2",
+     "title": "Students must be accompanied by an Adult"
+    },
+    {
+     "code": "S3",
+     "title": "Each Student Team member must have a completed participant release form on file"
+    },
+    {
+     "code": "S4",
+     "title": "Stay inside the Field"
+    },
+    {
+     "code": "S5",
+     "title": "Wear safety glasses"
+    }
+   ]
+  },
+  {
+   "id": "G",
+   "name": "General",
+   "rules": [
+    {
+     "code": "G1",
+     "title": "Participants must follow the Code of Conduct"
+    },
+    {
+     "code": "G2",
+     "title": "Participants must follow the Student Centered Policy"
+    },
+    {
+     "code": "G3",
+     "title": "Use common sense"
+    },
+    {
+     "code": "G4",
+     "title": "Students must meet the Student Eligibility Policy requirements"
+    },
+    {
+     "code": "G5",
+     "title": "There is a difference between accidentally and willfully violating a Robot rule"
+    }
+   ]
+  },
+  {
+   "id": "SC",
+   "name": "Scoring",
+   "rules": [
+    {
+     "code": "SC1",
+     "title": "All scoring statuses are evaluated after the Match ends"
+    },
+    {
+     "code": "SC2",
+     "title": "Placed Scoring Object criteria"
+    },
+    {
+     "code": "SC3",
+     "title": "Each Pin consists of two Pin Halves"
+    },
+    {
+     "code": "SC4",
+     "title": "A Toggle is considered set to a color"
+    },
+    {
+     "code": "SC5",
+     "title": "Ownership of Yellow Pin Halves"
+    },
+    {
+     "code": "SC6",
+     "title": "Robot ending in the Midfield"
+    },
+    {
+     "code": "SC7",
+     "title": "Autonomous Bonus evaluation"
+    },
+    {
+     "code": "SC8",
+     "title": "Autonomous Win Point"
+    }
+   ]
+  },
+  {
+   "id": "R",
+   "name": "Robot",
+   "rules": [
+    {
+     "code": "R1",
+     "title": "One Robot per Team"
+    },
+    {
+     "code": "R2",
+     "title": "Robots must pass inspection"
+    },
+    {
+     "code": "R3",
+     "title": "Robots must fit within an 18\" x 18\" x 18\" volume"
+    },
+    {
+     "code": "R4",
+     "title": "Officially registered Team numbers must be displayed on Robot license plates"
+    },
+    {
+     "code": "R5",
+     "title": "Let go of Scoring Objects after the Match"
+    },
+    {
+     "code": "R6",
+     "title": "Robots have one Brain"
+    },
+    {
+     "code": "R7",
+     "title": "Keep the power button or battery connection accessible"
+    },
+    {
+     "code": "R8",
+     "title": "Firmware"
+    },
+    {
+     "code": "R9",
+     "title": "Use a \"Competition Template\" for programming"
+    },
+    {
+     "code": "R10",
+     "title": "Motors are limited"
+    },
+    {
+     "code": "R11",
+     "title": "Motors are limited for Subsystem 2"
+    },
+    {
+     "code": "R12",
+     "title": "Electrical power comes from VEX batteries only"
+    },
+    {
+     "code": "R13",
+     "title": "Robots use VEXnet"
+    },
+    {
+     "code": "R14",
+     "title": "Give the radio some space"
+    },
+    {
+     "code": "R15",
+     "title": "One or two Controllers per Robot"
+    },
+    {
+     "code": "R16",
+     "title": "Robots are built from the VEX V5 system"
+    },
+    {
+     "code": "R17",
+     "title": "New VEX parts are legal"
+    },
+    {
+     "code": "R18",
+     "title": "Prohibited Items"
+    },
+    {
+     "code": "R19",
+     "title": "Certain non-VEX components are allowed"
+    },
+    {
+     "code": "R20",
+     "title": "Custom V5 Smart Cables are allowed"
+    },
+    {
+     "code": "R21",
+     "title": "A limited amount of tape is allowed"
+    },
+    {
+     "code": "R22",
+     "title": "Certain non-VEX fasteners are allowed"
+    },
+    {
+     "code": "R23",
+     "title": "Visual decorations are allowed"
+    },
+    {
+     "code": "R24",
+     "title": "A limited amount of custom plastic is allowed"
+    },
+    {
+     "code": "R25",
+     "title": "Pneumatics are limited"
+    },
+    {
+     "code": "R26",
+     "title": "The VEX Pressure Gauge (276-8748) is a required part if a Robot includes pneumatics"
+    },
+    {
+     "code": "R27",
+     "title": "Most modifications to non-electrical components are allowed"
+    },
+    {
+     "code": "R28",
+     "title": "No modifications to electronic or pneumatic components are allowed"
+    }
+   ]
+  },
+  {
+   "id": "T",
+   "name": "Tournament",
+   "rules": [
+    {
+     "code": "T1",
+     "title": "Head Referees have ultimate and final authority on all gameplay and Robot ruling decisions"
+    },
+    {
+     "code": "T2",
+     "title": "Head Referees must be qualified"
+    },
+    {
+     "code": "T3",
+     "title": "Drive Team Members are permitted to immediately appeal a Head Referee's ruling"
+    },
+    {
+     "code": "T4",
+     "title": "The Event Partner has ultimate authority regarding all non-gameplay decisions"
+    },
+    {
+     "code": "T5",
+     "title": "Be prepared for minor Field variance"
+    },
+    {
+     "code": "T6",
+     "title": "Fields may be repaired at the Event Partner's discretion"
+    },
+    {
+     "code": "T7",
+     "title": "Fields at an event must be consistent with each other"
+    },
+    {
+     "code": "T8",
+     "title": "There are three types of Field control that may be used"
+    },
+    {
+     "code": "T9",
+     "title": "There are two types of Field Perimeter that may be used"
+    },
+    {
+     "code": "T10",
+     "title": "Qualification Matches follow the Match Schedule"
+    },
+    {
+     "code": "T11",
+     "title": "Each Team will have at least six Qualification Matches"
+    },
+    {
+     "code": "T12",
+     "title": "Qualification Matches contribute to a Team's ranking for Alliance Selection"
+    },
+    {
+     "code": "T13",
+     "title": "Qualification Match tiebreakers"
+    },
+    {
+     "code": "T14",
+     "title": "Small Tournaments have fewer Alliances"
+    },
+    {
+     "code": "T15",
+     "title": "Send a Student representative to Alliance Selection"
+    },
+    {
+     "code": "T16",
+     "title": "Each Team may only be invited once to join one Alliance"
+    },
+    {
+     "code": "T17",
+     "title": "Elimination Matches follow the Elimination Bracket"
+    },
+    {
+     "code": "T18",
+     "title": "Elimination Matches are a blend of \"Best of 1\" and \"Best of 3\""
+    },
+    {
+     "code": "T19",
+     "title": "Ties in Elimination Matches lead to limited rematches"
+    },
+    {
+     "code": "T20",
+     "title": "Skills Match Schedule"
+    },
+    {
+     "code": "T21",
+     "title": "Skills Challenge Fields need not match Head-to-Head Field modifications"
+    },
+    {
+     "code": "T22",
+     "title": "Skills Rankings at events"
+    },
+    {
+     "code": "T23",
+     "title": "Skills Rankings Globally"
+    },
+    {
+     "code": "T24",
+     "title": "Robot Skills at League Events"
+    }
+   ]
+  }
+ ]
+}

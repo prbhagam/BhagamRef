@@ -1,0 +1,10 @@
+{
+  "name": "BhagamRef",
+  "short_name": "BhagamRef",
+  "description": "Digital match anomaly log for VEX V5 Robotics Competition referees.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f6f3",
+  "theme_color": "#17181a",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
