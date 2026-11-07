@@ -86,6 +86,8 @@ function fmtDate(iso) {
   const d = new Date(iso.length === 10 ? iso + 'T12:00:00' : iso);
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 }
+/** RobotEvents leaves `scored` false on many saved matches, so a non-zero score also counts. */
+const hasScore = m => m.red.score != null && m.blue.score != null && (m.scored || m.red.score > 0 || m.blue.score > 0);
 const naturalCmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
 
 // ---------------------------------------------------------------------------
@@ -434,6 +436,7 @@ function newSessState(code) {
     matchesAt: 0,
     matchesError: null,
     matchesLoading: false,
+    flash: new Map(), // match key -> time it last changed (new or newly scored)
     division: null,
     teams: null,
     teamsError: null,
@@ -575,7 +578,7 @@ function connectStream(s) {
   es.onopen = () => {
     s.connected = true;
     renderSyncStatus();
-    if (hadError) refetchState(s).catch(() => {});
+    if (hadError) { refetchState(s).catch(() => {}); loadMatches(s); }
     flush();
   };
   es.onerror = () => {
@@ -590,6 +593,7 @@ function connectStream(s) {
   on('custom-match', m => s.customMatches.set(m.key, m));
   on('custom-match-deleted', ({ key }) => s.customMatches.delete(key));
   on('presence', list => { s.online = list; });
+  on('matches', data => { if (data.division === s.division) applyMatches(s, data); });
   on('session', info => { s.info = info; });
   on('deleted', () => { toast('The owner deleted this session.', 'error'); navigate('/', { replace: true }); });
 }
@@ -602,7 +606,7 @@ async function loadMatches(s, { fresh = false } = {}) {
   try {
     const data = await api('GET', `/api/s/${s.code}/matches?division=${s.division}${fresh ? '&fresh=1' : ''}`);
     if (app.sess !== s) return;
-    if (data.division === s.division) { s.matches = data.matches; s.matchesAt = data.fetchedAt; s.matchesError = null; }
+    if (data.division === s.division) applyMatches(s, data);
   } catch (e) {
     if (app.sess === s) s.matchesError = e.offline ? 'Offline — showing the last schedule loaded.' : e.message;
   } finally {
@@ -610,6 +614,31 @@ async function loadMatches(s, { fresh = false } = {}) {
   }
   rerender();
 }
+/** Swap in a fresh match list, flagging new matches and newly saved scores. */
+function applyMatches(s, data) {
+  const prev = new Map(s.matches.map(m => [m.key, m]));
+  const hadSchedule = s.matchesAt > 0 && prev.size > 0;
+  const wasEmpty = s.matchesAt > 0 && prev.size === 0;
+  const added = [], scored = [];
+  const t = Date.now();
+  for (const m of data.matches) {
+    const old = prev.get(m.key);
+    if (!old) { if (hadSchedule) { added.push(m); s.flash.set(m.key, t); } continue; }
+    if (hasScore(m) && (!hasScore(old) || old.red.score !== m.red.score || old.blue.score !== m.blue.score)) { scored.push(m); s.flash.set(m.key, t); }
+  }
+  s.matches = data.matches;
+  s.matchesAt = data.fetchedAt;
+  s.matchesError = null;
+  if (added.length) {
+    const labels = added.slice(0, 4).map(m => m.label).join(', ') + (added.length > 4 ? ` +${added.length - 4} more` : '');
+    toast(`${added.length} new match${added.length === 1 ? '' : 'es'}: ${labels}`);
+  } else if (wasEmpty && data.matches.length) {
+    toast(`Match schedule published: ${data.matches.length} matches`);
+  }
+  if (scored.length === 1 && !added.length) toast(`${scored[0].label} score saved: ${scored[0].red.score}–${scored[0].blue.score}`);
+  else if (scored.length > 1 && !added.length) toast(`${scored.length} new scores saved`);
+}
+
 async function loadTeams(s) {
   try { s.teams = (await api('GET', `/api/s/${s.code}/teams`)).teams; s.teamsError = null; } catch (e) { s.teamsError = e.message; }
   if (app.sess === s) rerender();
@@ -679,7 +708,8 @@ async function showSession(code, tab, param) {
     connectStream(s);
     loadMatches(s);
     loadTeams(s);
-    s.timers.push(setInterval(() => { if (document.visibilityState === 'visible') loadMatches(s); }, 30000));
+    // Live updates arrive over SSE; this slower poll is a fallback and tells the server we're still watching.
+    s.timers.push(setInterval(() => { if (document.visibilityState === 'visible') loadMatches(s); }, 60000));
     s.timers.push(setInterval(() => { if (s.outbox.length) flush(); }, 5000));
     s.onVisible = () => { if (document.visibilityState === 'visible' && app.sess === s) { refetchState(s).catch(() => {}); loadMatches(s); if (s.es?.readyState === EventSource.CLOSED) connectStream(s); } };
     s.onOnline = () => { s.netDown = false; flush(); refetchState(s).catch(() => {}); };
@@ -768,7 +798,7 @@ function buildMatchesView(s) {
   const q = h('input', { class: 'input', type: 'search', placeholder: 'Team or match (e.g. 4621F, Q12)', value: s.ui.matchQ, 'aria-label': 'Filter matches', autocomplete: 'off', autocapitalize: 'characters' });
   q.addEventListener('input', () => { s.ui.matchQ = q.value; drawList(); });
   const roundSeg = segmented([['all', 'All'], ['quals', 'Quals'], ['elims', 'Elims'], ['flagged', 'Flagged']], s.ui.matchRound, v => { s.ui.matchRound = v; drawList(); });
-  const divSelect = h('select', { class: 'input div-select', 'aria-label': 'Division', onchange: e => { s.division = Number(e.target.value); store.set(`br_div_${s.code}`, s.division); s.matches = []; s.ui.scrolledToNow = false; drawList(); loadMatches(s, { fresh: true }); } });
+  const divSelect = h('select', { class: 'input div-select', 'aria-label': 'Division', onchange: e => { s.division = Number(e.target.value); store.set(`br_div_${s.code}`, s.division); s.matches = []; s.matchesAt = 0; s.ui.scrolledToNow = false; drawList(); loadMatches(s, { fresh: true }); } });
   const listMeta = h('div', { class: 'list-meta' });
   const listBody = h('div', { class: 'match-list', role: 'list' });
   const detail = h('section', { class: 'detail-pane', 'aria-label': 'Match details' });
@@ -816,7 +846,7 @@ function buildMatchesView(s) {
     if (!total && !s.matchesLoading) {
       nodes.push(h('div', { class: 'empty' },
         h('p', { class: 'empty-title' }, 'No matches published yet'),
-        h('p', { class: 'muted' }, 'The schedule appears here once Tournament Manager publishes it to events.vex.com. It refreshes every 30 seconds. Until then, add a match by hand.'),
+        h('p', { class: 'muted' }, 'The schedule appears here once Tournament Manager publishes it to events.vex.com. It updates live. Until then, add a match by hand.'),
         h('button', { class: 'btn primary', onclick: () => openCustomMatchSheet(s) }, icon('plus', 18), 'Add a match')));
     }
     if (!items.length && total) nodes.push(h('div', { class: 'empty small' }, h('p', { class: 'muted' }, 'No matches match that filter.')));
@@ -831,10 +861,15 @@ function buildMatchesView(s) {
           tc.major ? h('i', { class: 'tdot major', title: `${tc.major} major this session` }) : tc.minor ? h('i', { class: 'tdot minor', title: `${tc.minor} minor this session` }) : null);
       };
       nodes.push(link(`/s/${s.code}/m/${encodeURIComponent(m.key)}`, {
-        class: 'match-row' + (s.param === m.key ? ' active' : '') + (m.key === nowKey ? ' now' : '') + (m.pending ? ' pending' : ''),
+        class: 'match-row' + (s.param === m.key ? ' active' : '') + (m.key === nowKey ? ' now' : '') + (m.pending ? ' pending' : '') + (Date.now() - (s.flash.get(m.key) || 0) < 2500 ? ' flash' : ''),
         role: 'listitem', dataset: { key: m.key },
       },
-        h('div', { class: 'mlabel' }, h('strong', null, m.label), h('span', null, m.custom ? 'manual' : m.started ? fmtTime(m.started) : m.scheduled ? fmtTime(m.scheduled) : '')),
+        h('div', { class: 'mlabel' }, h('strong', null, m.label),
+          hasScore(m)
+            ? h('span', { class: 'mscore', 'aria-label': `Red ${m.red.score}, Blue ${m.blue.score}` },
+                h('b', { class: 'red' + (m.red.score > m.blue.score ? ' win' : '') }, m.red.score),
+                h('b', { class: 'blue' + (m.blue.score > m.red.score ? ' win' : '') }, m.blue.score))
+            : h('span', null, m.custom ? 'manual' : m.started ? fmtTime(m.started) : m.scheduled ? fmtTime(m.scheduled) : '')),
         h('div', { class: 'malliances' },
           h('div', { class: 'malliance red' }, ...m.red.teams.map(t => teamCell(t, 'red'))),
           h('div', { class: 'malliance blue' }, ...m.blue.teams.map(t => teamCell(t, 'blue')))),
@@ -895,7 +930,7 @@ function buildMatchDetail(s, key) {
     const byTeam = violationsByTeam(s);
     const inMatch = [...s.violations.values()].filter(v => v.matchKey === key);
     const c = counts(inMatch);
-    const scoreText = m.red.score != null && m.blue.score != null && (m.scored || m.red.score || m.blue.score) ? `${m.red.score} – ${m.blue.score}` : null;
+    const scoreText = hasScore(m) ? `${m.red.score} – ${m.blue.score}` : null;
     el.replaceChildren(
       h('div', { class: 'detail-head' },
         link(`/s/${s.code}`, { class: 'icon-btn narrow-only', 'aria-label': 'Back to matches' }, icon('back')),

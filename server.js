@@ -269,6 +269,54 @@ setInterval(() => {
 }, 20000).unref();
 
 // ---------------------------------------------------------------------------
+// Live match schedule + scores
+// While refs have a session open, the server polls events.vex.com for that event/division and pushes
+// the full match list over SSE whenever anything changes (new elimination matches, saved scores, etc.).
+// ---------------------------------------------------------------------------
+const MATCH_POLL_MS = Math.max(5000, Number(process.env.MATCH_POLL_MS) || 15000);
+const WATCH_IDLE_MS = 3 * 60e3; // stop polling a division nobody has asked about for this long
+const matchWatch = new Map(); // `${eventId}:${div}` -> { eventId, div, sessions:Set<id>, lastWanted, sig, busy }
+
+const matchSig = list => crypto.createHash('sha1').update(JSON.stringify(list)).digest('hex');
+
+async function fetchMatches(eventId, div, { fresh = false } = {}) {
+  const key = `matches:${eventId}:${div}`;
+  if (fresh) { const hit = vexCache.get(key); if (hit && !hit.promise) hit.at = 0; }
+  const raw = await cached(key, 10e3, () => vexFetchAll(`/events/${eventId}/divisions/${div}/matches`));
+  return { division: div, fetchedAt: vexCache.get(key)?.at || now(), matches: raw.map(slimMatch).sort((a, b) => a.sort - b.sort) };
+}
+
+function watchMatches(session, div) {
+  const key = `${session.event_id}:${div}`;
+  let w = matchWatch.get(key);
+  if (!w) { w = { eventId: session.event_id, div, sessions: new Set(), lastWanted: 0, sig: null, busy: false }; matchWatch.set(key, w); }
+  w.sessions.add(session.id);
+  w.lastWanted = now();
+  return w;
+}
+
+/** Record the latest match list for a watcher and push it to connected refs if it changed. */
+function publishMatches(w, data) {
+  const sig = matchSig(data.matches);
+  const changed = w.sig !== null && sig !== w.sig;
+  w.sig = sig;
+  if (!changed) return;
+  for (const sessionId of w.sessions) broadcast(sessionId, 'matches', data);
+}
+
+setInterval(async () => {
+  for (const [key, w] of matchWatch) {
+    const live = [...w.sessions].some(id => streams.has(id));
+    if (now() - w.lastWanted > WATCH_IDLE_MS && !live) { matchWatch.delete(key); continue; }
+    if (!live || w.busy || now() - w.lastWanted > WATCH_IDLE_MS) continue;
+    w.busy = true;
+    try { publishMatches(w, await fetchMatches(w.eventId, w.div, { fresh: true })); }
+    catch { /* transient API/network failure — try again next tick */ }
+    finally { w.busy = false; }
+  }
+}, MATCH_POLL_MS).unref();
+
+// ---------------------------------------------------------------------------
 // HTTP helpers
 // ---------------------------------------------------------------------------
 function httpError(status, message) { const e = new Error(message); e.status = status; return e; }
@@ -548,11 +596,10 @@ scoped.get('/matches', wrap(async (req, res) => {
   const s = req.session;
   const divisions = JSON.parse(s.divisions_json || '[]');
   const div = Number(req.query.division) || divisions[0]?.id || 1;
-  const force = req.query.fresh === '1';
-  const key = `matches:${s.event_id}:${div}`;
-  if (force) { const hit = vexCache.get(key); if (hit && !hit.promise) hit.at = 0; }
-  const matches = await cached(key, 20e3, () => vexFetchAll(`/events/${s.event_id}/divisions/${div}/matches`));
-  res.json({ division: div, fetchedAt: vexCache.get(key)?.at || now(), matches: matches.map(slimMatch).sort((a, b) => a.sort - b.sort) });
+  const w = watchMatches(s, div);
+  const data = await fetchMatches(s.event_id, div, { fresh: req.query.fresh === '1' });
+  publishMatches(w, data); // a manual refresh that finds new data updates everyone else too
+  res.json(data);
 }));
 
 scoped.get('/teams', wrap(async (req, res) => {

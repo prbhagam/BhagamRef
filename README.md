@@ -4,7 +4,7 @@ A digital match anomaly log for VEX V5 Robotics Competition referees. It works o
 
 - **Accounts.** Signed-in users create and keep competition sessions.
 - **Competition sessions.** A session covers one day of an event pulled from events.vex.com. Each session gets a 6-character join code. Guests join with the code and a name, and need no account.
-- **Matches.** The match schedule comes from events.vex.com and refreshes every 30 seconds. For multi-division events you pick the division. You can also add a match by hand if the schedule isn't published yet.
+- **Matches.** The match schedule comes from events.vex.com and updates live. While anyone has a session open, the server checks events.vex.com every 15 seconds and pushes changes to every ref. That includes newly saved scores and elimination matches as soon as they're created. For multi-division events you pick the division. You can also add a match by hand if the schedule isn't published yet.
 - **Violations.** On any team in a match, tap **+ Minor** or **+ Major**. Pick the rule from the Override v2.1 game manual (code and title, grouped by category, searchable) and add an optional comment.
 - **History.** Each team card in a match shows the team's violations for the day: this match, earlier matches, and repeated rules (e.g. `GG14 ×3`). The Teams tab and Log tab show the same data by team and as a timeline.
 - **Live sync.** Every participant's screen updates instantly through Server-Sent Events.
@@ -25,6 +25,7 @@ The server reads the events.vex.com API token from `VEX_API_TOKEN` or from `toke
 | `PORT` | `3000` | HTTP port |
 | `VEX_API_TOKEN` | contents of `token.txt` | events.vex.com bearer token |
 | `DATA_DIR` | `./data` | Where the SQLite database lives |
+| `MATCH_POLL_MS` | `15000` | How often to check events.vex.com for schedule and score changes (minimum 5000) |
 
 ## Deploying
 

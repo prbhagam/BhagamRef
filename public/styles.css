@@ -297,6 +297,13 @@ select.input { background-image: linear-gradient(45deg, transparent 50%, var(--i
 .mlabel { display: grid; line-height: 1.15; }
 .mlabel strong { font-size: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .mlabel span { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+.mlabel .mscore { display: flex; gap: 5px; font-variant-numeric: tabular-nums; }
+.mscore b { font-weight: 500; }
+.mscore b.red { color: var(--red); }
+.mscore b.blue { color: var(--blue); }
+.mscore b.win { font-weight: 800; }
+.match-row.flash { animation: row-flash 2.5s ease-out; }
+@keyframes row-flash { 0%, 30% { background: color-mix(in srgb, var(--ok) 22%, transparent); } 100% { background: transparent; } }
 .malliances { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; min-width: 0; }
 .malliance { display: grid; gap: 2px; padding: 5px 8px; border-radius: 9px; min-width: 0; }
 .malliance.red { background: var(--red-soft); }
