@@ -878,11 +878,50 @@ function buildMatchesView(s) {
           c.minor ? h('span', { class: 'badge minor' }, c.minor) : null)));
     }
     listBody.replaceChildren(...nodes);
+    if (s.param && s.param !== lastListParam) {
+      lastListParam = s.param;
+      requestAnimationFrame(() => listBody.querySelector('.match-row.active')?.scrollIntoView({ block: 'nearest' }));
+    }
     if (!s.ui.scrolledToNow && nowKey && !s.param && !s.ui.matchQ) {
       s.ui.scrolledToNow = true;
       requestAnimationFrame(() => listBody.querySelector('.match-row.now')?.scrollIntoView({ block: 'center' }));
     }
   }
+
+  let lastListParam = null;
+  let navDir = 0;
+
+  /** Neighbors follow the list as currently filtered; if the open match is filtered out, use the full list. */
+  function neighbors(key) {
+    let list = filtered().map(x => x.m);
+    let isFiltered = list.length !== allMatches(s).length;
+    if (!list.some(m => m.key === key)) { list = allMatches(s); isFiltered = false; }
+    const i = list.findIndex(m => m.key === key);
+    return { prev: i > 0 ? list[i - 1] : null, next: i >= 0 && i < list.length - 1 ? list[i + 1] : null, index: i, total: list.length, isFiltered };
+  }
+  function step(dir) {
+    if (!s.param) return;
+    const n = neighbors(s.param);
+    const target = dir < 0 ? n.prev : n.next;
+    if (!target) return;
+    navDir = dir;
+    navigate(`/s/${s.code}/m/${encodeURIComponent(target.key)}`, { replace: true });
+  }
+
+  // Swipe left/right on the match view to step between matches (phones/tablets).
+  let touch = null;
+  detail.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    // Ignore multi-touch and touches that start at the screen edge (iOS back-swipe gesture).
+    touch = e.touches.length === 1 && t.clientX > 24 && t.clientX < window.innerWidth - 24 ? { x: t.clientX, y: t.clientY, at: Date.now() } : null;
+  }, { passive: true });
+  detail.addEventListener('touchend', e => {
+    if (!touch || !s.param) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+    touch = null;
+    if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && Math.abs(dx) > Math.abs(dy) * 1.8) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
 
   function drawDetail() {
     el.classList.toggle('has-detail', !!s.param);
@@ -893,9 +932,13 @@ function buildMatchesView(s) {
     }
     if (detailKey !== s.param) {
       detailKey = s.param;
-      detailView = buildMatchDetail(s, s.param);
+      detailView = buildMatchDetail(s, s.param, { neighbors, step });
       detail.replaceChildren(detailView.el);
       detail.scrollTop = 0;
+      if (navDir) {
+        detailView.el.classList.add(navDir > 0 ? 'enter-next' : 'enter-prev');
+        navDir = 0;
+      }
     }
     detailView.update();
   }
@@ -903,6 +946,7 @@ function buildMatchesView(s) {
   return {
     el,
     setParam() {},
+    step,
     update() { drawList(); drawDetail(); },
   };
 }
@@ -917,12 +961,29 @@ function segmented(options, value, onChange) {
   return { el, set: draw };
 }
 
-function buildMatchDetail(s, key) {
-  const el = h('div', { class: 'match-detail' });
+function buildMatchDetail(s, key, { neighbors, step } = {}) {
+  // Wrapper keeps the prev/next bar pinned to the bottom of the pane even when the match content is short.
+  const el = h('div', { class: 'match-detail-wrap' });
+  const body = h('div', { class: 'match-detail' });
+  function matchNav() {
+    if (!neighbors) return null;
+    const n = neighbors(key);
+    if (n.index < 0) return null;
+    const btn = (m, dir) => h('button', {
+      type: 'button', class: `btn nav-btn ${dir < 0 ? 'prev' : 'next'}`, disabled: !m,
+      'aria-label': m ? `${dir < 0 ? 'Previous' : 'Next'} match: ${m.label}` : `No ${dir < 0 ? 'previous' : 'next'} match`,
+      onclick: () => step(dir),
+    }, dir < 0 ? icon('back', 20) : null, h('span', null, m ? m.label : '—'), dir > 0 ? icon('chevron', 20) : null);
+    return h('nav', { class: 'match-nav', 'aria-label': 'Neighboring matches' },
+      btn(n.prev, -1),
+      h('div', { class: 'match-nav-pos' }, h('b', null, `${n.index + 1}`), ` of ${n.total}`, n.isFiltered ? h('span', null, 'filtered') : null),
+      btn(n.next, 1));
+  }
   function update() {
     const m = findMatch(s, key);
     if (!m) {
-      el.replaceChildren(
+      el.replaceChildren(body);
+      body.replaceChildren(
         h('div', { class: 'detail-head' }, link(`/s/${s.code}`, { class: 'icon-btn narrow-only', 'aria-label': 'Back to matches' }, icon('back')), h('h2', null, 'Match')),
         s.matchesLoading || !s.matchesAt ? h('div', { class: 'skeleton tall' }) : h('div', { class: 'empty' }, h('p', { class: 'empty-title' }, 'Match not found'), h('p', { class: 'muted' }, 'It may be in another division or was removed.')));
       return;
@@ -931,7 +992,7 @@ function buildMatchDetail(s, key) {
     const inMatch = [...s.violations.values()].filter(v => v.matchKey === key);
     const c = counts(inMatch);
     const scoreText = hasScore(m) ? `${m.red.score} – ${m.blue.score}` : null;
-    el.replaceChildren(
+    body.replaceChildren(
       h('div', { class: 'detail-head' },
         link(`/s/${s.code}`, { class: 'icon-btn narrow-only', 'aria-label': 'Back to matches' }, icon('back')),
         h('div', { class: 'detail-title' },
@@ -942,6 +1003,7 @@ function buildMatchDetail(s, key) {
       ...['red', 'blue'].map(color => h('section', { class: `alliance-block ${color}` },
         h('h3', { class: 'alliance-label' }, color === 'red' ? 'Red alliance' : 'Blue alliance', m[color].score != null && scoreText ? h('span', { class: 'alliance-score' }, m[color].score) : null),
         h('div', { class: 'team-cards' }, ...m[color].teams.filter(t => t.number).map(t => teamCard(s, m, t, color, byTeam.get(t.number) || []))))));
+    el.replaceChildren(body, matchNav() || '');
   }
   return { el, update };
 }
@@ -1171,7 +1233,15 @@ function closeSheet(immediate = false) {
   else { el.classList.remove('in'); setTimeout(() => el.remove(), 220); }
   sheetState.lastFocus?.focus?.({ preventScroll: true });
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && sheetState.el) closeSheet(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && sheetState.el) return closeSheet();
+  // ←/→ step between matches (iPad keyboards, laptops) when not typing.
+  if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !sheetState.el && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    const s = app.sess;
+    if (s?.tab === 'matches' && s.param && s.view?.step) { e.preventDefault(); s.view.step(e.key === 'ArrowLeft' ? -1 : 1); }
+  }
+});
 
 function confirmSheet({ title, body, confirm, danger, onConfirm }) {
   openSheet(h('div', { class: 'sheet-body' },
